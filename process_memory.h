@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <stdexcept>
 #include <memory>
+#include <iterator>
 
 struct process_open_exception : public std::runtime_error {
     using std::runtime_error::runtime_error;
@@ -74,6 +75,12 @@ class process_memory_iterator {
             return !(*this == i);
         }
 
+        using difference_type = void;
+        using value_type = unsigned char;
+        using pointer = unsigned char*;
+        using reference = unsigned char&;
+        using iterator_category = std::forward_iterator_tag;
+
     private:
         HANDLE proc_;
         mutable void *base_;
@@ -81,3 +88,4 @@ class process_memory_iterator {
         mutable std::size_t buf_sz_;
         mutable std::size_t buf_off_;
 };
+
