@@ -7,11 +7,19 @@
 
 struct process_open_exception : public std::runtime_error {
     using std::runtime_error::runtime_error;
-}
+};
 
 struct invalid_iterator : public std::runtime_error {
     using std::runtime_error::runtime_error;
-}
+};
+
+struct memory_query_exception : public std::runtime_error {
+    using std::runtime_error::runtime_error;
+};
+
+struct memory_read_exception : public std::runtime_error {
+    using std::runtime_error::runtime_error;
+};
 
 class process_memory_iterator {
     public:
@@ -58,7 +66,7 @@ class process_memory_iterator {
         bool
         operator==(const process_memory_iterator& other) const noexcept
         {
-            return proc_ == other.proc_
+            return *proc_ == *(other.proc_)
                 && base == other.base_
                 && buf_off_ == other.buf_off_;
         }
@@ -82,10 +90,12 @@ class process_memory_iterator {
         using iterator_category = std::forward_iterator_tag;
 
     private:
-        HANDLE proc_;
+        std::shared_ptr<HANDLE> proc_;
         mutable void *base_;
         mutable unique_ptr<unsigned char[]> *buf_;
         mutable std::size_t buf_sz_;
         mutable std::size_t buf_off_;
-};
 
+        void update_pagerange();
+        void read_memory();
+};
