@@ -16,16 +16,20 @@ int main(int argc, char** argv)
         return 0;
     }
 
-    DWORD pid = static_cast<DWORD>(std::strtoul(argv[1], nullptr, 1));
+    DWORD pid = static_cast<DWORD>(std::strtoul(argv[1], nullptr, 10));
     if (pid == 0 || errno == ERANGE) {
         std::cerr << "Invalid argument: " << argv[1] << '\n';
         return 0;
     }
 
-    process_memory_iterator i(pid), end;
+    try {
+        process_memory_iterator i(pid), end;
 
-    while (i != end) {
-        std::cout << *i;
-        ++i;
+        while (i != end) {
+            std::cout << *i;
+            ++i;
+        }
+    } catch (const std::runtime_error& e) {
+        std::cerr << "Error: " << e.what() << '\n';
     }
 }

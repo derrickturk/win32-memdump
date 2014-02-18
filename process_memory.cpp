@@ -17,6 +17,8 @@ process_memory_iterator::process_memory_iterator(DWORD pid)
 
     if (*proc_ == NULL)
         throw process_open_exception("Unable to obtain process handle.");
+
+    update_pagerange();
 }
 
 process_memory_iterator::process_memory_iterator(
@@ -68,7 +70,7 @@ process_memory_iterator::operator=(
 
 unsigned char process_memory_iterator::operator*() const
 {
-    if (!this)
+    if (!*this)
         throw invalid_iterator("Attempt to dereference bad iterator.");
 
     return buf_.get()[buf_off_];
