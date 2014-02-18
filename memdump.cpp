@@ -1,5 +1,7 @@
 #include "windows.h"
 
+#include "process_memory.h"
+
 #include <iostream>
 #include <cstdlib>
 #include <cerrno>
@@ -10,7 +12,7 @@ std::size_t dump_process_memory(DWORD pid);
 int main(int argc, char** argv)
 {
     if (argc != 2) {
-        std::cerr << "Usage: " << argc ? argv[0] << " <pid>\n";
+        std::cerr << "Usage: " << (argc ? argv[0] : "memdump") << " <pid>\n";
         return 0;
     }
 
@@ -20,21 +22,10 @@ int main(int argc, char** argv)
         return 0;
     }
 
-    try {
-        static_cast<void>(dump_process_memory(pid));
-    } catch (const process_open_exception& e) {
+    process_memory_iterator i(pid), end;
+
+    while (i != end) {
+        std::cout << *i;
+        ++i;
     }
-}
-
-std::size_t dump_process_memory(DWORD pid)
-{
-    HANDLE proc = OpenProcess(
-            PROCESS_VM_READ | PROCESS_QUERY_INFORMATION,
-            FALSE,
-            pid)
-
-    if (proc == NULL)
-        throw process_open_exception(GetLastError);
-
-
 }
