@@ -24,6 +24,7 @@ process_memory_iterator::process_memory_iterator(
 
     proc_ = other.proc_;
     base_ = other.base_;
+    buf_off_ = other.buf_off_;
 }
 
 process_memory_iterator::process_memory_iterator(
@@ -33,6 +34,7 @@ process_memory_iterator::process_memory_iterator(
     buf_sz_ = other.buf_sz_;
     proc_ = other.proc_;
     base_ = other.base_;
+    buf_off_ = other.buf_off_;
 }
 
 process_memory_iterator&
@@ -52,6 +54,20 @@ process_memory_iterator::operator=(
     base_ = other.base_;
     buf_ = other.buf_;
     buf_sz_ = other.buf_sz_;
+    buf_off_ = other.buf_off_;
 
     return *this;
+}
+
+unsigned char process_memory_iterator::operator*()
+{
+    if (!this)
+        throw invalid_iterator();
+
+    return buf_.get()[buf_off_];
+}
+
+process_memory_iterator& process_memory_iterator::operator++()
+{
+
 }
