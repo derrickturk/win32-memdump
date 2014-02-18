@@ -15,16 +15,16 @@ process_memory_iterator::process_memory_iterator(DWORD pid)
             [](HANDLE* p) { CloseHandle(*p); }
     );
 
-    if (*proc == NULL)
-        throw process_open_exception(GetLastError);
+    if (*proc_ == NULL)
+        throw process_open_exception("Unable to obtain process handle.");
 }
 
 process_memory_iterator::process_memory_iterator(
         const process_memory_iterator& other)
 {
-    buf_ = std::make_unique(other.buf_sz_);
+    buf_ = std::unique_ptr<unsigned char[]>(new unsigned char[other.buf_sz_]);
     buf_sz_ = other.buf_sz_;
-    std::copy(other.buf_.get(), other.buf_.get() + other.buf_sz,
+    std::copy(other.buf_.get(), other.buf_.get() + other.buf_sz_,
             buf_.get());
 
     proc_ = other.proc_;
@@ -37,6 +37,7 @@ process_memory_iterator::process_memory_iterator(
 {
     buf_ = std::move(other.buf_);
     buf_sz_ = other.buf_sz_;
+
     proc_ = other.proc_;
     base_ = other.base_;
     buf_off_ = other.buf_off_;
@@ -56,18 +57,19 @@ process_memory_iterator::operator=(
         process_memory_iterator&& other) noexcept
 {
     std::swap(buf_, other.buf_);
-    base_ = other.base_;
-    buf_ = other.buf_;
     buf_sz_ = other.buf_sz_;
+
+    proc_ = other.proc_;
+    base_ = other.base_;
     buf_off_ = other.buf_off_;
 
     return *this;
 }
 
-unsigned char process_memory_iterator::operator*()
+unsigned char process_memory_iterator::operator*() const
 {
     if (!this)
-        throw invalid_iterator();
+        throw invalid_iterator("Attempt to dereference bad iterator.");
 
     return buf_.get()[buf_off_];
 }
@@ -85,7 +87,7 @@ process_memory_iterator& process_memory_iterator::operator++()
 void process_memory_iterator::update_pagerange()
 {
     MEMORY_BASIC_INFORMATION info;
-    void *base = base_ + buf_sz;
+    void *base = static_cast<unsigned char*>(base_) + buf_sz_;
 
     do { // query until we find a committed private or mapped region
         std::size_t res = VirtualQueryEx(
@@ -99,11 +101,12 @@ void process_memory_iterator::update_pagerange()
             if (GetLastError() == ERROR_INVALID_PARAMETER) {
                 // we've walked off the end of the process's
                 // address space
-                std::swap(*this, process_memory_iterator());
+                process_memory_iterator bad;
+                std::swap(*this, bad);
                 return;
             } else {
                 // something else (bad) happened
-                throw memory_query_exception();
+                throw memory_query_exception("Unable to query virtual memory.");
             }
         }
 
@@ -112,7 +115,7 @@ void process_memory_iterator::update_pagerange()
                     || info.Protect == MEM_PRIVATE))
             break;
         else
-            base = info.BaseAddress + info.RegionSize;
+            base = static_cast<unsigned char*>(info.BaseAddress) + info.RegionSize;
     } while (true);
 
     read_memory(static_cast<void*>(info.BaseAddress),
@@ -128,7 +131,7 @@ void process_memory_iterator::read_memory(void* new_base, std::size_t new_size)
                 new_buf.get(),
                 new_size,
                 nullptr) == 0)
-        throw memory_read_exception();
+        throw memory_read_exception("Unable to read memory.");
 
     base_ = new_base;
     buf_ = std::move(new_buf);
