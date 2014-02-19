@@ -113,8 +113,8 @@ void process_memory_iterator::update_pagerange()
         }
 
         if (info.State == MEM_COMMIT
-                && (info.Protect == MEM_MAPPED
-                    || info.Protect == MEM_PRIVATE))
+                && (info.Type == MEM_MAPPED
+                    || info.Type == MEM_PRIVATE))
             break;
         else
             base = static_cast<unsigned char*>(info.BaseAddress) + info.RegionSize;
