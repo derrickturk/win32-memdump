@@ -2,6 +2,8 @@
 #include <algorithm>
 #include <utility>
 
+#include <iostream>
+
 process_memory_iterator::process_memory_iterator(DWORD pid)
     : process_memory_iterator()
 {
@@ -112,9 +114,13 @@ void process_memory_iterator::update_pagerange()
             }
         }
 
+        // TODO: it may be possible to remove PAGE_GUARD with VirtualProtectEx
         if (info.State == MEM_COMMIT
                 && (info.Type == MEM_MAPPED
-                    || info.Type == MEM_PRIVATE))
+                    || info.Type == MEM_PRIVATE)
+                && !(info.Protect == 0
+                    || info.Protect & PAGE_NOACCESS
+                    || info.Protect & PAGE_GUARD))
             break;
         else
             base = static_cast<unsigned char*>(info.BaseAddress) + info.RegionSize;

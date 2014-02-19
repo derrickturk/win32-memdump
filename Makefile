@@ -1,6 +1,6 @@
 CXX=g++
-DEBUGOPTS=-g
-OPTOPTS=
+DEBUGOPTS=
+OPTOPTS=-O3
 CXXOPTS=-Wall -Wextra -Werror -std=c++11 -pedantic $(DEBUGOPTS) $(OPTOPTS)
 
 memdump.exe: memdump.cpp process_memory.o
