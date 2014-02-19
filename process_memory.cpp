@@ -23,53 +23,6 @@ process_memory_iterator::process_memory_iterator(DWORD pid)
     update_pagerange();
 }
 
-process_memory_iterator::process_memory_iterator(
-        const process_memory_iterator& other)
-{
-    buf_ = std::unique_ptr<unsigned char[]>(new unsigned char[other.buf_sz_]);
-    buf_sz_ = other.buf_sz_;
-    std::copy(other.buf_.get(), other.buf_.get() + other.buf_sz_,
-            buf_.get());
-
-    proc_ = other.proc_;
-    base_ = other.base_;
-    buf_off_ = other.buf_off_;
-}
-
-process_memory_iterator::process_memory_iterator(
-        process_memory_iterator&& other) noexcept
-{
-    buf_ = std::move(other.buf_);
-    buf_sz_ = other.buf_sz_;
-
-    proc_ = other.proc_;
-    base_ = other.base_;
-    buf_off_ = other.buf_off_;
-}
-
-process_memory_iterator&
-process_memory_iterator::operator=(
-        const process_memory_iterator& other) noexcept
-{
-    process_memory_iterator i(other);
-    std::swap(*this, i);
-    return *this;
-}
-
-process_memory_iterator&
-process_memory_iterator::operator=(
-        process_memory_iterator&& other) noexcept
-{
-    std::swap(buf_, other.buf_);
-    buf_sz_ = other.buf_sz_;
-
-    proc_ = other.proc_;
-    base_ = other.base_;
-    buf_off_ = other.buf_off_;
-
-    return *this;
-}
-
 unsigned char process_memory_iterator::operator*() const
 {
     if (!*this)
@@ -91,6 +44,8 @@ process_memory_iterator& process_memory_iterator::operator++()
 void process_memory_iterator::update_pagerange()
 {
     MEMORY_BASIC_INFORMATION info;
+    // technically this isn't portable because it is possible that nullptr != 0
+    // but then, look around
     void *base = static_cast<unsigned char*>(base_) + buf_sz_;
 
     do { // query until we find a committed private or mapped region
@@ -132,7 +87,9 @@ void process_memory_iterator::update_pagerange()
 
 void process_memory_iterator::read_memory(void* new_base, std::size_t new_size)
 {
-    std::unique_ptr<unsigned char[]> new_buf(new unsigned char[new_size]);
+    std::shared_ptr<unsigned char> new_buf(
+            new unsigned char[new_size],
+            std::default_delete<unsigned char[]>());
     if (ReadProcessMemory(
                 *proc_,
                 new_base,

@@ -8,6 +8,8 @@
 #include <cerrno>
 #include <cstddef>
 #include <cstdio>
+#include <iterator>
+#include <algorithm>
 
 std::size_t dump_process_memory(DWORD pid);
 
@@ -45,9 +47,9 @@ int main(int argc, char** argv)
     }
 
     try {
-        process_memory_iterator i(pid), end;
-        for (; i != end; ++i)
-            (*os) << *i;
+        process_memory_iterator pi(pid);
+        std::ostream_iterator<unsigned char> oi(*os);
+        std::copy(pi, process_memory_iterator {}, oi);
     } catch (const std::runtime_error& e) {
         std::cerr << "Error: " << e.what() << '\n';
     }
